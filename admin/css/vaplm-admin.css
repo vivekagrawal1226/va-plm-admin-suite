@@ -1,0 +1,372 @@
+/**
+ * VA PLM - Industrial Engineering Backend Layout Framework
+ * Dense Multi-Tab Application Stylesheet for /wp-admin Isolation
+ *
+ * @package    VA_PLM_Admin_Suite
+ * @subpackage VA_PLM_Admin_Suite/admin/css
+ */
+
+:root {
+    --vaplm-primary: #2271b1;
+    --vaplm-primary-hover: #135e96;
+    --vaplm-danger: #d63638;
+    --vaplm-danger-hover: #b32d2e;
+    --vaplm-border-color: #ccd0d4;
+    --vaplm-bg-card: #ffffff;
+    --vaplm-bg-alternate: #f6f7f7;
+    --vaplm-text-dark: #1d2327;
+    --vaplm-text-muted: #646970;
+    --vaplm-font-mono: Consolas, Monaco, monospace;
+    --vaplm-radius: 4px;
+}
+
+/* ==========================================================================
+   1. GLOBAL HIGH-DENSITY PLM WORKSPACE CONTAINERS
+   ========================================================================== */
+.vaplm-admin-wrap {
+    margin: 20px 20px 0 0;
+}
+
+.vaplm-card {
+    background: var(--vaplm-bg-card);
+    border: 1px solid var(--vaplm-border-color);
+    border-radius: var(--vaplm-radius);
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    position: relative;
+}
+
+.vaplm-card h2, .vaplm-card h3, .vaplm-card h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--vaplm-text-dark);
+    border-bottom: 1px solid #f0f0f1;
+    padding-bottom: 8px;
+}
+
+/* ==========================================================================
+   2. HORIZONTAL TAB APP CONTROLLER LAYOUTS
+   ========================================================================== */
+.vaplm-tabbed-app-container {
+    margin-top: 10px;
+}
+
+.vaplm-nav-tab-wrapper {
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--vaplm-border-color);
+    padding-bottom: 0;
+}
+
+.vaplm-nav-tab-wrapper .nav-tab {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 16px;
+    margin-right: 4px;
+    background: #e0e0e0;
+    border: 1px solid var(--vaplm-border-color);
+    border-bottom: none;
+    border-radius: var(--vaplm-radius) var(--vaplm-radius) 0 0;
+    color: var(--vaplm-text-muted);
+    transition: all 0.15s ease-in-out;
+}
+
+.vaplm-nav-tab-wrapper .nav-tab:hover {
+    background: var(--vaplm-bg-alternate);
+    color: var(--vaplm-text-dark);
+}
+
+.vaplm-nav-tab-wrapper .nav-tab-active {
+    background: var(--vaplm-bg-card);
+    border-bottom: 1px solid var(--vaplm-bg-card);
+    color: var(--vaplm-primary);
+    position: relative;
+    top: 1px;
+}
+
+.vaplm-tab-panel {
+    display: none;
+}
+
+.vaplm-tab-panel-active {
+    display: block;
+    animation: vaplmPanelFadeIn 0.18s ease-in-out;
+}
+
+@keyframes vaplmPanelFadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   3. FIXED COMPLIANCE FORENSICS (IMMUTABLE TRACKING FIELDS)
+   ========================================================================== */
+.vaplm-readonly-token-field {
+    background-color: #f0f0f1 !important;
+    border: 1px solid var(--vaplm-border-color) !important;
+    color: var(--vaplm-text-muted) !important;
+    font-family: var(--vaplm-font-mono) !important;
+    font-weight: 600 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    user-select: all;
+}
+
+.vaplm-object-number-accent {
+    border-left: 4px solid var(--vaplm-primary) !important;
+    color: var(--vaplm-text-dark) !important;
+}
+
+.vaplm-item-type-pill {
+    background: #f0f0f1;
+    border: 1px solid var(--vaplm-border-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vaplm-text-dark);
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+/* Status Matrix State Badges */
+.vaplm-status-draft { background: #e6e6e6; color: #333333; }
+.vaplm-status-review { background: #fef1d1; color: #e4a300; border-color: #fbdc9a; }
+.vaplm-status-released { background: #edfaef; color: #257e3a; border-color: #ade7b9; }
+.vaplm-status-obsolete { background: #fbeae2; color: #ca4a1f; border-color: #f1c3b1; }
+
+/* ==========================================================================
+   4. DENSE VERTICALLY STACKED FORM MATRICES
+   ========================================================================== */
+.form-table.vaplm-vertical-stack {
+    display: block;
+    width: 100%;
+}
+
+.form-table.vaplm-vertical-stack tbody {
+    display: block;
+    width: 100%;
+}
+
+.form-table.vaplm-vertical-stack tr {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 0;
+}
+
+.form-table.vaplm-vertical-stack tr:last-child {
+    margin-bottom: 0;
+}
+
+.form-table.vaplm-vertical-stack th,
+.form-table.vaplm-vertical-stack td {
+    display: block;
+    width: 100%;
+    padding: 0 !important;
+    text-align: left;
+}
+
+.form-table.vaplm-vertical-stack th {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--vaplm-text-dark);
+    margin-bottom: 5px;
+}
+
+/* Enforce field view optimizations to cancel grayish native overlaps on disabled */
+.vaplm-tabbed-app-container input[type="text"]:disabled,
+.vaplm-tabbed-app-container input[type="number"]:disabled,
+.vaplm-tabbed-app-container select:disabled,
+.vaplm-tabbed-app-container textarea:disabled {
+    background-color: #ffffff !important;
+    color: var(--vaplm-text-dark) !important;
+    border: 1px solid var(--vaplm-border-color) !important;
+    cursor: default !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+}
+
+.vaplm-tabbed-app-container input[type="text"],
+.vaplm-tabbed-app-container input[type="number"],
+.vaplm-tabbed-app-container select,
+.vaplm-tabbed-app-container textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 4px 10px;
+    font-size: 13px;
+    border: 1px solid #8c8f94;
+    border-radius: var(--vaplm-radius);
+    background-color: #ffffff;
+    color: var(--vaplm-text-dark);
+}
+
+.vaplm-tabbed-app-container select {
+    padding: 2px 24px 2px 8px;
+}
+
+.vaplm-tabbed-app-container textarea {
+    height: auto;
+    min-height: 80px;
+}
+
+/* ==========================================================================
+   5. TWO-DIMENSIONAL BOM STRUCTURE VIEWPORT & COLUMN ADJUSTER
+   ========================================================================== */
+.vaplm-bom-rows-scroll-viewport {
+    width: 100%;
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid var(--vaplm-border-color);
+    border-radius: var(--vaplm-radius);
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    position: relative;
+    background: #ffffff;
+}
+
+.vaplm-bom-rows-scroll-viewport table.vaplm-data-table {
+    width: 100%;
+    border-collapse: separate;
+    border: none;
+    margin: 0;
+    table-layout: fixed; /* Enforces hard sizing layout limits on drag calculation frames */
+}
+
+.vaplm-bom-rows-scroll-viewport table.vaplm-data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f0f0f1 !important;
+    box-shadow: inset 0 -1px 0 var(--vaplm-border-color);
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Interactive Column Resizer Handles */
+.vaplm-th-resizer-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 11;
+    transition: background-color 0.1s;
+}
+
+.vaplm-th-resizer-handle:hover,
+.vaplm-th-resizer-handle.vaplm-active-dragging {
+    background-color: var(--vaplm-primary);
+}
+
+/* ==========================================================================
+   6. MULTI-BINARY VAULT DRAG-AND-DROP ATTACHMENT SHROUDS
+   ========================================================================== */
+.vaplm-attachment-uploader-dropzone {
+    border: 2px dashed var(--vaplm-border-color);
+    background: var(--vaplm-bg-alternate);
+    padding: 30px;
+    text-align: center;
+    border-radius: var(--vaplm-radius);
+    transition: border-color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.vaplm-attachment-uploader-dropzone:hover {
+    border-color: var(--vaplm-primary);
+    background: #f0f6fa;
+}
+
+.vaplm-attachment-uploader-dropzone p {
+    margin: 10px 0 15px 0;
+    color: var(--vaplm-text-muted);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.vaplm-data-table {
+    border: 1px solid var(--vaplm-border-color);
+    box-shadow: none !important;
+}
+
+.vaplm-data-table th {
+    font-weight: 600 !important;
+    background: #f0f0f1 !important;
+    color: var(--vaplm-text-dark) !important;
+}
+
+.vaplm-data-table td {
+    vertical-align: middle !important;
+}
+
+.vaplm-data-table tbody tr:hover td {
+    background-color: #f6f9fc !important;
+}
+
+.vaplm-file-link-accent {
+    font-weight: 600;
+    color: var(--vaplm-primary);
+    text-decoration: none;
+}
+
+.vaplm-file-link-accent:hover {
+    color: var(--vaplm-primary-hover);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   7. MATRIX PERMISSIONS WORKSPACE GRIDS (RBAC)
+   ========================================================================== */
+.vaplm-matrix-cb {
+    transform: scale(1.15);
+    cursor: pointer;
+    margin: 0 !important;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.vaplm-matrix-cb:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Custom layout token labels */
+.vaplm-subtype-badge-accent {
+    background: #e5f3ff;
+    color: #0066cc;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 6px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Advanced Queries Relational Engine UI Adaptations */
+.vaplm-query-rule-row select,
+.vaplm-query-rule-row input {
+    height: 32px !important;
+    line-height: 30px !important;
+}
+
+.vaplm-report-widget-row {
+    transition: background 0.1s;
+}
+
+.vaplm-report-widget-row:hover {
+    background: #f0f6fa;
+}
