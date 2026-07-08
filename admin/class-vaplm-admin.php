@@ -97,7 +97,6 @@ class VAPLM_Admin {
         global $wpdb;
         $lov_dictionaries = $wpdb->get_col( "SELECT DISTINCT list_slug FROM {$wpdb->prefix}vaplm_lov_entries ORDER BY list_slug ASC" );
         
-        // FIX 2: Renamed localized object from wpVaplmAdminL10n to vaplmAdminSuiteL10n to remove "wp" prefix
         wp_localize_script( 'vaplm-admin-js', 'vaplmAdminSuiteL10n', array(
             'editModeActive'   => __( 'Edit Mode Active', 'va-plm-admin-suite' ),
             'editModeWarning'  => __( 'You are modifying a live engineering record context. Save updates to commit changes.', 'va-plm-admin-suite' ),
@@ -356,7 +355,7 @@ class VAPLM_Admin {
             wp_send_json_error( array( 'message' => __( 'Report tracking label cannot be blank.', 'va-plm-admin-suite' ) ) );
         }
 
-        // FIX 1: Explicitly sanitize nested array properties before saving to the database
+        // Deep sanitize the nested multi-dimensional parameters array
         $sanitized_rules = array();
         foreach ( $raw_rules as $rule ) {
             if ( is_array( $rule ) ) {
@@ -459,4 +458,5 @@ class VAPLM_Admin {
         
         exit;
     }
+
 }

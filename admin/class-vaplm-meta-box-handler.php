@@ -12,6 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class VAPLM_Meta_Box_Handler {
 
+    public function __construct() {
+        add_action( 'add_meta_boxes', array( $this, 'register_dynamic_meta_panels' ) );
+        add_action( 'save_post', array( $this, 'save_dynamic_meta_panels' ), 15, 2 );
+    }
+
     /**
      * Registers contextual administrative panels against core engineering post type classes.
      */
@@ -33,7 +38,8 @@ class VAPLM_Meta_Box_Handler {
      * Orchestrates high-density horizontal sub-tab views inside the post editor framework.
      */
     public function render_integrated_meta_box_tabs_layout( $post ) {
-        wp_nonce_field( 'vaplm_meta_box_save_action', 'vaplm_meta_box_nonce' );
+        // MATCHED NONCE: This exactly matches the security check in va-plm-admin-suite.php
+        wp_nonce_field( 'vaplm_save_meta_action', 'vaplm_meta_box_nonce' );
 
         $object_number = get_post_meta( $post->ID, '_vaplm_object_number', true ) ?: '--';
         $lifecycle     = get_post_meta( $post->ID, '_vaplm_lifecycle_status', true ) ?: 'Draft';
@@ -47,6 +53,24 @@ class VAPLM_Meta_Box_Handler {
         $modifier_name = $m_user_id ? get_userdata( $m_user_id )->user_login : '--';
 
         $is_editable_context = current_user_can( 'edit_post', $post->ID );
+
+        // Determine Active Subtype
+        $tax_map = array(
+            'vaplm_part'         => 'vaplm_part_type',
+            'vaplm_document'     => 'vaplm_doc_type',
+            'vaplm_bom'          => 'vaplm_bom_type',
+            'vaplm_change_order' => 'vaplm_change_type'
+        );
+        $active_tax = isset( $tax_map[$post->post_type] ) ? $tax_map[$post->post_type] : '';
+        $available_subtypes = ! empty( $active_tax ) ? get_terms( array( 'taxonomy' => $active_tax, 'hide_empty' => false ) ) : array();
+
+        $selected_subtype = '';
+        if ( ! empty( $active_tax ) ) {
+            $terms = wp_get_post_terms( $post->ID, $active_tax );
+            if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+                $selected_subtype = $terms[0]->slug;
+            }
+        }
         ?>
         <div class="vaplm-tabbed-app-container">
             
@@ -90,10 +114,26 @@ class VAPLM_Meta_Box_Handler {
                             <th scope="row"><label><?php esc_html_e( 'Object Description Descriptor Title *', 'va-plm-admin-suite' ); ?></label></th>
                             <td>
                                 <p class="description" style="margin: 0 0 5px 0; font-size: 12px; color: #646970;">
-                                    <?php esc_html_e( 'Provide the standard nomenclature title used on production manifests routing files.', 'va-plm-admin-suite' ); ?>
+                                    <?php esc_html_e( 'Provide the standard nomenclature title used on production manifests routing files. (Edit this in the main title box above)', 'va-plm-admin-suite' ); ?>
                                 </p>
                             </td>
                         </tr>
+
+                        <?php if ( ! empty( $active_tax ) && ! empty( $available_subtypes ) && ! is_wp_error( $available_subtypes ) ) : ?>
+                            <tr>
+                                <th scope="row"><label for="vaplm_active_object_subtype"><strong><?php esc_html_e( 'Classification Sub-Type *', 'va-plm-admin-suite' ); ?></strong></label></th>
+                                <td>
+                                    <select id="vaplm_active_object_subtype" name="vaplm_active_object_subtype" class="vaplm-topology-selector-trigger" required style="width: 100%; max-width: 400px;">
+                                        <option value=""><?php esc_html_e( '-- Choose Classification Profile --', 'va-plm-admin-suite' ); ?></option>
+                                        <?php foreach ( $available_subtypes as $term ) : ?>
+                                            <option value="<?php echo esc_attr( $term->slug ); ?>" <?php selected( $selected_subtype, $term->slug ); ?>><?php echo esc_html( $term->name ); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <p class="description"><?php esc_html_e( 'Changing classification shifts the field validation scopes dynamically below.', 'va-plm-admin-suite' ); ?></p>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+
                         <?php
                         $fields_registry = get_option( 'vaplm_dynamic_field_definitions', array() );
                         foreach ( $fields_registry as $key => $config ) {
@@ -102,20 +142,33 @@ class VAPLM_Meta_Box_Handler {
                                     continue;
                                 }
                                 
-                                $meta_value = get_post_meta( $post->ID, '_' . $key, true ) ?: ( $config['default'] ?? '' );
+                                $sub_scope = isset( $config['object_subtype'] ) ? $config['object_subtype'] : '';
+                                $is_global = empty( $sub_scope ) || $sub_scope === 'general';
+                                
+                                $row_class = 'vaplm-dynamic-property-row ' . ( $is_global ? 'vaplm-scope-universal' : 'vaplm-scope-child-node vaplm-target-subtype-' . esc_attr( $sub_scope ) );
+                                $display_style = ( $is_global || $sub_scope === $selected_subtype ) ? '' : 'display: none;';
+
+                                $meta_value = get_post_meta( $post->ID, '_' . $key, true );
+                                if ( '' === $meta_value && isset( $config['default'] ) ) {
+                                    $meta_value = $config['default'];
+                                }
+                                
                                 $required_attribute = empty( $config['required'] ) ? '' : 'required';
                                 ?>
-                                <tr>
+                                <tr class="<?php echo esc_attr( $row_class ); ?>" style="<?php echo esc_attr( $display_style ); ?>" data-subtype-scope="<?php echo esc_attr( $sub_scope ); ?>">
                                     <th scope="row">
                                         <label for="vaplm_custom_f_<?php echo esc_attr( $key ); ?>">
                                             <?php echo esc_html( $config['label'] ); ?>
                                             <?php if ( ! empty( $required_attribute ) ) echo '<span style="color:#d63638;">*</span>'; ?>
                                         </label>
+                                        <?php if ( ! $is_global ) : ?>
+                                            <br><small class="vaplm-subtype-badge-accent" style="color: #2271b1; font-size: 10px; text-transform: uppercase;"><?php echo esc_html( $sub_scope ); ?></small>
+                                        <?php endif; ?>
                                     </th>
                                     <td>
-                                        <?php if ( 'lov_dropdown' === $config['field_type'] && ! empty( $config['lov_target'] ) ) : ?>
-                                            <select id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" <?php echo esc_attr( $required_attribute ); ?>>
-                                                <option value=""><?php printf( esc_html__( '-- Select %s Option --', 'va-plm-admin-suite' ), esc_html( $config['label'] ) ); ?></option>
+                                        <?php if ( ( 'lov_dropdown' === $config['field_type'] || 'lov' === $config['field_type'] ) && ! empty( $config['lov_target'] ) ) : ?>
+                                            <select id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" <?php echo esc_attr( $required_attribute ); ?> style="width: 100%; max-width: 400px;">
+                                                <option value=""><?php /* translators: %s: Custom field label */ printf( esc_html__( '-- Select %s Option --', 'va-plm-admin-suite' ), esc_html( $config['label'] ) ); ?></option>
                                                 <?php
                                                 global $wpdb;
                                                 $lov_rows = $wpdb->get_results( $wpdb->prepare( "SELECT option_value, option_label FROM {$wpdb->prefix}vaplm_lov_entries WHERE list_slug = %s ORDER BY id ASC", sanitize_key( $config['lov_target'] ) ) );
@@ -125,9 +178,11 @@ class VAPLM_Meta_Box_Handler {
                                                 ?>
                                             </select>
                                         <?php elseif ( 'textarea' === $config['field_type'] ) : ?>
-                                            <textarea id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" <?php echo esc_attr( $required_attribute ); ?>><?php echo esc_textarea( $meta_value ); ?></textarea>
+                                            <textarea id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" rows="4" <?php echo esc_attr( $required_attribute ); ?> style="width: 100%; max-width: 400px;"><?php echo esc_textarea( $meta_value ); ?></textarea>
+                                        <?php elseif ( 'number' === $config['field_type'] ) : ?>
+                                            <input type="number" step="any" id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $meta_value ); ?>" <?php echo esc_attr( $required_attribute ); ?> style="width: 100%; max-width: 400px;" />
                                         <?php else : ?>
-                                            <input type="text" id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $meta_value ); ?>" <?php echo esc_attr( $required_attribute ); ?> />
+                                            <input type="text" id="vaplm_custom_f_<?php echo esc_attr( $key ); ?>" name="vaplm_dynamic_meta[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $meta_value ); ?>" <?php echo esc_attr( $required_attribute ); ?> style="width: 100%; max-width: 400px;" />
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -182,13 +237,16 @@ class VAPLM_Meta_Box_Handler {
                             <tbody id="vaplm-bom-assembly-rows-injection-body">
                                 <?php
                                 global $wpdb;
-                                $bom_lines = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vaplm_ebom WHERE parent_part_id = %d ORDER BY id ASC", $post->ID ) );
+                                // DB FIX: Updated column references to match table structure (parent_id)
+                                $bom_lines = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vaplm_ebom WHERE parent_id = %d ORDER BY id ASC", $post->ID ) );
                                 
                                 if ( ! empty( $bom_lines ) ) {
                                     foreach ( $bom_lines as $line ) {
                                         $row_id = intval( $line->id );
-                                        $row_meta_payload = ! empty( $line->meta_data ) ? json_decode( $line->meta_data, true ) : array();
-                                        $child_part_edit_url = admin_url( 'post.php?post=' . intval( $line->child_part_id ) . '&action=edit' );
+                                        // DB FIX: Updated column reference to custom_data
+                                        $row_meta_payload = ! empty( $line->custom_data ) ? json_decode( $line->custom_data, true ) : array();
+                                        // DB FIX: Updated column reference to child_id
+                                        $child_part_edit_url = admin_url( 'post.php?post=' . intval( $line->child_id ) . '&action=edit' );
                                         ?>
                                         <tr data-row-index="<?php echo esc_attr( $row_id ); ?>">
                                             <td style="vertical-align: middle;">
@@ -200,7 +258,7 @@ class VAPLM_Meta_Box_Handler {
                                                         $all_parts = get_posts( array( 'post_type' => 'vaplm_part', 'posts_per_page' => -1, 'post_status' => 'publish' ) );
                                                         foreach ( $all_parts as $p_item ) {
                                                             $p_num = get_post_meta( $p_item->ID, '_vaplm_object_number', true ) ?: '--';
-                                                            echo '<option value="' . esc_attr( $p_item->ID ) . '" ' . selected( $line->child_part_id, $p_item->ID, false ) . '>' . esc_html( $p_num . ' - ' . $p_item->post_title ) . '</option>';
+                                                            echo '<option value="' . esc_attr( $p_item->ID ) . '" ' . selected( $line->child_id, $p_item->ID, false ) . '>' . esc_html( $p_num . ' - ' . $p_item->post_title ) . '</option>';
                                                         }
                                                         ?>
                                                     </select>
@@ -223,7 +281,7 @@ class VAPLM_Meta_Box_Handler {
                                             <?php foreach ( $bom_table_columns_schema as $col_key => $col_config ) : ?>
                                                 <?php $cell_value = isset( $row_meta_payload[$col_key] ) ? $row_meta_payload[$col_key] : ( $col_config['default'] ?? '' ); ?>
                                                 <td>
-                                                    <?php if ( 'lov_dropdown' === $col_config['field_type'] && ! empty( $col_config['lov_target'] ) ) : ?>
+                                                    <?php if ( ( 'lov_dropdown' === $col_config['field_type'] || 'lov' === $col_config['field_type'] ) && ! empty( $col_config['lov_target'] ) ) : ?>
                                                         <select name="vaplm_bom_components[<?php echo esc_attr( $row_id ); ?>][<?php echo esc_attr( $col_key ); ?>]" style="width: 100%; height: 32px;">
                                                             <option value=""><?php esc_html_e( '-- Select --', 'va-plm-admin-suite' ); ?></option>
                                                             <?php
@@ -313,7 +371,7 @@ class VAPLM_Meta_Box_Handler {
             <?php endif; ?>
 
             <div id="vaplm-tab-attachments-vault" class="vaplm-tab-panel">
-                <div class="vaplm-attachment-uploader-dropzone vaplm-editable-only-element" id="vaplm-add-multi-binary-btn" style="margin-bottom: 20px;">
+                <div class="vaplm-attachment-uploader-dropzone vaplm-editable-only-element" id="vaplm-add-multi-binary-btn" style="margin-bottom: 20px; border: 2px dashed #ccd0d4; padding: 25px; text-align: center; background: #fafafa; border-radius: 4px; cursor: pointer;">
                     <span class="dashicons dashicons-upload" style="font-size: 40px; width: 40px; height: 40px; color: #2271b1;"></span>
                     <p><?php esc_html_e( 'Click to bind active production documentation to this object specification routing file context.', 'va-plm-admin-suite' ); ?></p>
                 </div>
@@ -389,7 +447,7 @@ class VAPLM_Meta_Box_Handler {
         if ( ! empty( $bom_table_columns_schema ) ) {
             foreach ( $bom_table_columns_schema as $c_key => $c_conf ) {
                 $options_buffer = array();
-                if ( 'lov_dropdown' === $c_conf['field_type'] && ! empty( $c_conf['lov_target'] ) ) {
+                if ( ( 'lov_dropdown' === $c_conf['field_type'] || 'lov' === $c_conf['field_type'] ) && ! empty( $c_conf['lov_target'] ) ) {
                     global $wpdb;
                     $lov_items = $wpdb->get_results( $wpdb->prepare( "SELECT option_value, option_label FROM {$wpdb->prefix}vaplm_lov_entries WHERE list_slug = %s ORDER BY id ASC", sanitize_key( $c_conf['lov_target'] ) ) );
                     foreach ( $lov_items as $li ) {
@@ -434,14 +492,30 @@ class VAPLM_Meta_Box_Handler {
         }
 
         // Strict Nonce and Sanitization on incoming fields
-        if ( ! isset( $_POST['vaplm_meta_box_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['vaplm_meta_box_nonce'] ) ), 'vaplm_meta_box_save_action' ) ) {
+        if ( ! isset( $_POST['vaplm_meta_box_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['vaplm_meta_box_nonce'] ) ), 'vaplm_save_meta_action' ) ) {
             return;
         }
 
         if ( ! current_user_can( 'edit_post', $post_id ) ) {
             return;
         }
+        
+        // Save Active Object Subtype
+        if ( isset( $_POST['vaplm_active_object_subtype'] ) ) {
+            $subtype = sanitize_key( wp_unslash( $_POST['vaplm_active_object_subtype'] ) );
+            $tax_map = array(
+                'vaplm_part'         => 'vaplm_part_type',
+                'vaplm_document'     => 'vaplm_doc_type',
+                'vaplm_bom'          => 'vaplm_bom_type',
+                'vaplm_change_order' => 'vaplm_change_type'
+            );
 
+            if ( isset( $tax_map[$post->post_type] ) ) {
+                wp_set_object_terms( $post_id, $subtype, $tax_map[$post->post_type] );
+            }
+        }
+
+        // Save Custom Dynamic Attributes
         if ( isset( $_POST['vaplm_dynamic_meta'] ) && is_array( $_POST['vaplm_dynamic_meta'] ) ) {
             $dynamic_meta = wp_unslash( $_POST['vaplm_dynamic_meta'] );
             foreach ( $dynamic_meta as $meta_key => $value ) {
@@ -449,11 +523,13 @@ class VAPLM_Meta_Box_Handler {
             }
         }
 
+        // Save Traceability Links
         if ( 'vaplm_bom' === $post->post_type || 'vaplm_part' === $post->post_type ) {
             $cross_references = isset( $_POST['vaplm_linked_documents'] ) ? array_map( 'absint', wp_unslash( $_POST['vaplm_linked_documents'] ) ) : array();
             update_post_meta( $post_id, '_vaplm_linked_documents', $cross_references );
         }
 
+        // Save Vault Attachments
         if ( isset( $_POST['vaplm_attachments'] ) && is_array( $_POST['vaplm_attachments'] ) ) {
             $attachments_pool = array_map( 'absint', wp_unslash( $_POST['vaplm_attachments'] ) );
             update_post_meta( $post_id, '_vaplm_vault_attachments', $attachments_pool );
@@ -461,6 +537,7 @@ class VAPLM_Meta_Box_Handler {
             update_post_meta( $post_id, '_vaplm_vault_attachments', array() );
         }
 
+        // Process EBOM Structure saving
         if ( 'vaplm_bom' === $post->post_type ) {
             $raw_components_payload = isset( $_POST['vaplm_bom_components'] ) ? (array) wp_unslash( $_POST['vaplm_bom_components'] ) : array();
             
@@ -468,7 +545,8 @@ class VAPLM_Meta_Box_Handler {
                 global $wpdb;
                 $table_ebom = $wpdb->prefix . 'vaplm_ebom';
 
-                $wpdb->delete( $table_ebom, array( 'parent_part_id' => $post_id ), array( '%d' ) );
+                // DB FIX: Updated column reference to match DB Schema (parent_id)
+                $wpdb->delete( $table_ebom, array( 'parent_id' => $post_id ), array( '%d' ) );
 
                 $fields_registry = get_option( 'vaplm_dynamic_field_definitions', array() );
                 $relational_columns_keys = array_filter( $fields_registry, function( $field ) {
@@ -497,11 +575,11 @@ class VAPLM_Meta_Box_Handler {
                         $wpdb->insert(
                             $table_ebom,
                             array(
-                                'parent_part_id' => $post_id,
-                                'child_part_id'  => $child_id,
-                                'quantity'       => $quantity,
-                                'uom'            => $uom_slug,
-                                'meta_data'      => $json_string_payload
+                                'parent_id'   => $post_id, // DB FIX
+                                'child_id'    => $child_id, // DB FIX
+                                'quantity'    => $quantity,
+                                'uom'         => $uom_slug,
+                                'custom_data' => $json_string_payload // DB FIX
                             ),
                             array( '%d', '%d', '%f', '%s', '%s' )
                         );

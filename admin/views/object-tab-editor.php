@@ -15,8 +15,17 @@ if ( ! defined( 'ABSPATH' ) ) {
     die;
 }
 
+// Safely determine the object type to prevent null property warnings
 if ( ! isset( $object_type ) ) {
-    $object_type = get_current_screen()->post_type;
+    if ( isset( $post ) && is_object( $post ) ) {
+        $object_type = $post->post_type;
+    } elseif ( isset( $_GET['post_type'] ) ) {
+        $object_type = sanitize_key( wp_unslash( $_GET['post_type'] ) );
+    } elseif ( isset( $_GET['post'] ) ) {
+        $object_type = get_post_type( absint( wp_unslash( $_GET['post'] ) ) );
+    } else {
+        $object_type = 'vaplm_part'; // Ultimate fallback
+    }
 }
 
 $is_edit_mode = isset( $_GET['post'] ) && ! empty( $_GET['post'] );
@@ -105,7 +114,12 @@ $dynamic_fields = get_option( 'vaplm_dynamic_field_definitions', array() );
 
     <form method="post" action="<?php echo esc_url( admin_url( 'post.php' ) ); ?>" id="vaplm-tabbed-object-master-form">
         <?php 
+        // Standard WP Post Nonce
         wp_nonce_field( 'update-post_' . $post_id );
+        
+        // VITAL: Custom PLM Nonce required by the save_post hooks
+        wp_nonce_field( 'vaplm_save_meta_action', 'vaplm_meta_box_nonce' );
+        
         echo '<input type="hidden" name="action" value="editpost" />';
         echo '<input type="hidden" name="post_ID" value="' . esc_attr( $post_id ) . '" />';
         echo '<input type="hidden" name="post_type" value="' . esc_attr( $object_type ) . '" />';
@@ -146,7 +160,10 @@ $dynamic_fields = get_option( 'vaplm_dynamic_field_definitions', array() );
                             }
 
                             $sub_scope = isset( $meta['object_subtype'] ) ? $meta['object_subtype'] : '';
-                            $is_global = empty( $sub_scope );
+                            
+                            // Treat 'general' and empty string both as global fields
+                            $is_global = empty( $sub_scope ) || $sub_scope === 'general';
+                            
                             $row_class = 'vaplm-dynamic-property-row ' . ( $is_global ? 'vaplm-scope-universal' : 'vaplm-scope-child-node vaplm-target-subtype-' . esc_attr( $sub_scope ) );
                             $display_style = ( $is_global || $sub_scope === $selected_subtype ) ? '' : 'display: none;';
 
@@ -162,7 +179,7 @@ $dynamic_fields = get_option( 'vaplm_dynamic_field_definitions', array() );
                                     <?php endif; ?>
                                 </th>
                                 <td>
-                                    <?php if ( $meta['field_type'] === 'lov' ) : 
+                                    <?php if ( $meta['field_type'] === 'lov' || $meta['field_type'] === 'lov_dropdown' ) : 
                                         global $wpdb;
                                         $table_lov = $wpdb->prefix . 'vaplm_lov_entries';
                                         $lov_options = $wpdb->get_results( $wpdb->prepare( "SELECT option_value, option_label FROM $table_lov WHERE list_slug = %s ORDER BY option_label ASC", $meta['lov_target'] ) );
@@ -309,12 +326,13 @@ $dynamic_fields = get_option( 'vaplm_dynamic_field_definitions', array() );
             <?php if ( 'vaplm_bom' === $object_type ) : ?>
                 <div id="vaplm-pane-bom-structure" class="vaplm-tab-panel">
                     <?php 
-                    $meta_box_handler = new VAPLM_Meta_Box_Handler();
-                    if ( method_exists( $meta_box_handler, 'render_bom_relationship_table' ) ) {
-                        $meta_box_handler->render_bom_relationship_table( $post_object ); 
-                    } else {
-                        // Fallback message if integrated directly instead of separate call
-                        echo '<p style="padding: 20px;">' . esc_html__( 'BOM structure loaded within General Properties tab matrix.', 'va-plm-admin-suite' ) . '</p>';
+                    if ( class_exists( 'VAPLM_Meta_Box_Handler' ) ) {
+                        $meta_box_handler = new VAPLM_Meta_Box_Handler();
+                        if ( method_exists( $meta_box_handler, 'render_bom_relationship_table' ) ) {
+                            $meta_box_handler->render_bom_relationship_table( $post_object ); 
+                        } else {
+                            echo '<p style="padding: 20px;">' . esc_html__( 'BOM structure loaded within General Properties tab matrix.', 'va-plm-admin-suite' ) . '</p>';
+                        }
                     }
                     ?>
                 </div>

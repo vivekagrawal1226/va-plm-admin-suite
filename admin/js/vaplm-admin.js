@@ -10,9 +10,8 @@
     'use strict';
 
     $(function() {
-        // Cache core localization and routing data
-        //var l10n = typeof window.wpVaplmAdminL10n !== 'undefined' ? window.wpVaplmAdminL10n : {};
-		var l10n = typeof window.vaplmAdminSuiteL10n !== 'undefined' ? window.vaplmAdminSuiteL10n : {};
+        // Cache core localization and routing data (Updated prefix for WP Repo compliance)
+        var l10n = typeof window.vaplmAdminSuiteL10n !== 'undefined' ? window.vaplmAdminSuiteL10n : {};
         var ajaxUrl = l10n.ajaxUrl || ajaxurl;
 
         // --------------------------------------------------------------------------
@@ -62,6 +61,27 @@
             $(targetPanelId).addClass('vaplm-tab-panel-active').siblings('.vaplm-tab-panel').removeClass('vaplm-tab-panel-active');
         });
 
+        // Subtype Classification Toggle (Show/Hide dynamic fields on edit screen)
+        $('.vaplm-topology-selector-trigger').on('change', function() {
+            var selectedSubtype = $(this).val();
+            
+            // Hide all child nodes and disable their inputs so they don't submit empty data
+            $('.vaplm-scope-child-node').hide().find('input, select, textarea').prop('disabled', true);
+            
+            // Show all universal nodes and enable them
+            $('.vaplm-scope-universal').show().find('input, select, textarea').prop('disabled', false);
+
+            // Show nodes specifically matching the chosen subtype and enable them
+            if (selectedSubtype) {
+                $('.vaplm-target-subtype-' + selectedSubtype).show().find('input, select, textarea').prop('disabled', false);
+            }
+        });
+
+        // Trigger on page load to ensure initial state fields are visible
+        if ($('.vaplm-topology-selector-trigger').length) {
+            $('.vaplm-topology-selector-trigger').trigger('change');
+        }
+
         // --------------------------------------------------------------------------
         // 2. ATTACHMENTS VAULT (WP MEDIA LIBRARY INTEGRATION)
         // --------------------------------------------------------------------------
@@ -98,6 +118,7 @@
                         var newRow = '<tr data-attachment-id="' + attachment.id + '">' +
                             '<td><a href="' + attachment.url + '" target="_blank" class="vaplm-file-link-accent">📁 ' + fileName + '</a></td>' +
                             '<td><code>' + mimeDisplay + '</code></td>' +
+                            '<td>' + new Date().toISOString().split('T')[0] + '</td>' +
                             '<td style="text-align: center;" class="vaplm-editable-only-element-cell">' +
                             '<button type="button" class="button vaplm-remove-attachment-row-btn" style="color: #d63638;">✕ Detach</button>' +
                             '<input type="hidden" name="vaplm_attachments[]" value="' + attachment.id + '" />' +
@@ -115,7 +136,7 @@
             var $tbody = $(this).closest('tbody');
             $(this).closest('tr').remove();
             if ($tbody.find('tr').length === 0) {
-                $tbody.append('<tr class="vaplm-empty-attachments-row"><td colspan="3" style="text-align: center; color: #646970;">' + (l10n.noAttachments || 'No attachments in vault.') + '</td></tr>');
+                $tbody.append('<tr class="vaplm-empty-attachments-row"><td colspan="4" style="text-align: center; color: #646970;">' + (l10n.noAttachments || 'No attachments in vault.') + '</td></tr>');
             }
         });
 
@@ -144,7 +165,7 @@
 
             var subtypeHtml = '';
             if (subScope) {
-                // BUGFIX: Insert specific hidden sub_scope if directed by the split views.
+                // Ensure specific hidden sub_scope is applied for split configuration views
                 subtypeHtml = '<input type="hidden" name="vaplm_dynamic_fields['+transientId+'][object_subtype]" value="'+subScope+'" />';
             } else {
                 subtypeHtml = '<select name="vaplm_dynamic_fields['+transientId+'][object_subtype]"><option value="">Global (All Sub-types)</option></select>';
@@ -177,7 +198,9 @@
             var $tbody = $(this).closest('tbody');
             $(this).closest('tr').remove();
             if ($tbody.find('tr').length === 0) {
-                $tbody.append('<tr class="vaplm-empty-schema-fallback-row"><td colspan="5" style="text-align:center; padding:15px; color:#646970;">No attributes currently mapped.</td></tr>');
+                // Determine column span dynamically
+                var colSpan = $(this).closest('table').find('thead th').length;
+                $tbody.append('<tr class="vaplm-empty-schema-fallback-row"><td colspan="' + colSpan + '" style="text-align:center; padding:15px; color:#646970;">No attributes currently mapped.</td></tr>');
             }
         });
 
@@ -283,7 +306,7 @@
                 $(this).closest('.vaplm-query-rule-row').remove();
             });
 
-            // BUGFIX: Execute Saved Reports Functionality
+            // Execute Saved Reports Functionality
             $(document).on('click', '.vaplm-trigger-saved-report-btn', function(e) {
                 e.preventDefault();
                 var rules = $(this).data('rules');

@@ -3,7 +3,7 @@ Contributors: Vivek Agrawal
 Tags: plm, product lifecycle management, bom, manufacturing, engineering, eco
 Requires at least: 5.8
 Tested up to: 7.0
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,13 @@ The plugin features a built-in Role-Based Access Control (RBAC) matrix. You can 
 4. **Configuration Control:** The central settings hub to manage LOV dictionaries, autonumbering masks, and RBAC permissions.
 
 == Changelog ==
+
+= 1.5.3 =
+* Security Hardening: Enforced strict CSRF nonce validation and capability checks (`edit_post`) on the `save_post` hook to prevent unauthorized taxonomy assignments.
+* Architecture: Transitioned custom object editing canvas natively into the WordPress Classic Editor via standard Meta Boxes to resolve CSS conflicts and header streaming issues.
+* Bugfix: Resolved visibility logic preventing global custom fields scoped to 'general' from rendering in the editor.
+* Bugfix: Corrected database column mapping schemas (`parent_id`, `child_id`, `custom_data`) during BOM structure commits.
+* Bugfix: Added `DOING_AUTOSAVE` verification to prevent empty data commits during background draft saves.
 
 = 1.5.2 =
 * Fix: Synced Stable Tag and Plugin header formatting to resolve repository mismatch flags.
