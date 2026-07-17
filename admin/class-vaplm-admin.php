@@ -432,9 +432,12 @@ class VAPLM_Admin {
                 echo esc_html( get_post_meta( $post_id, '_vaplm_modified_datetime', true ) ?: '--' );
                 break;
             case 'vaplm_creator_user':
+                //$creator_id = get_post_meta( $post_id, '_vaplm_creator_user_id', true );
+                //echo $creator_id ? esc_html( get_userdata( $creator_id )->user_login ) : '--';
                 $creator_id = get_post_meta( $post_id, '_vaplm_creator_user_id', true );
-                echo $creator_id ? esc_html( get_userdata( $creator_id )->user_login ) : '--';
-                break;
+                $creator_user = $creator_id ? get_userdata( $creator_id ) : false;
+                echo $creator_user ? esc_html( $creator_user->user_login ) : 'User Not Found';
+				break;
         }
     }
 
