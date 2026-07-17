@@ -3,7 +3,7 @@ Contributors: Vivek Agrawal
 Tags: plm, product lifecycle management, bom, manufacturing, engineering, eco
 Requires at least: 5.8
 Tested up to: 7.0
-Stable tag: 1.5.3
+Stable tag: 1.5.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,9 @@ The plugin features a built-in Role-Based Access Control (RBAC) matrix. You can 
 4. **Configuration Control:** The central settings hub to manage LOV dictionaries, autonumbering masks, and RBAC permissions.
 
 == Changelog ==
+
+= 1.5.4 =
+* Fixed user check in the Admin class
 
 = 1.5.3 =
 * Security Hardening: Enforced strict CSRF nonce validation and capability checks (`edit_post`) on the `save_post` hook to prevent unauthorized taxonomy assignments.

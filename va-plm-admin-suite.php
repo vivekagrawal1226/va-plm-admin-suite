@@ -3,7 +3,7 @@
  * Plugin Name: VA PLM Admin Suite
  * Plugin URI:  https://agrawalvivek.com/apps
  * Description: An enterprise-grade Product Lifecycle Management workspace built natively inside the /wp-admin dashboard context.
- * Version:     1.5.3
+ * Version:     1.5.4
  * Author:      Vivek Agrawal
  * Author URI:  https://agrawalvivek.com
  * Text Domain: va-plm-admin-suite
